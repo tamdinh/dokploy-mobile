@@ -3,7 +3,7 @@ import { FlatList, Platform, RefreshControl, View } from 'react-native';
 import { EaseView, type AnimateProps, type Transition } from 'react-native-ease/uniwind';
 import { useUniwind } from 'uniwind';
 
-import { useNotificationAll } from '@/api/notifications';
+import { useNotificationAll, notificationRemove } from '@/api/notifications';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -14,6 +14,7 @@ import type { NotificationAllResponseBody } from '@/types/notifications';
 import { cn, isErrorResponse } from '@/lib/utils';
 import { Stack, useRouter } from 'expo-router';
 import { HttpError } from '@/lib/http-error';
+import { toast } from 'sonner-native';
 import { Plus } from 'lucide-react-native';
 
 import { NotificationsCard } from './components/notifications-card';
@@ -53,6 +54,32 @@ export default function NotificationsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { impact, notifyError, notifySuccess } = useHaptics();
   const isReducedMotionEnabled = useReducedMotion();
+
+  const handleDelete = useCallback(
+    async (notificationId: string) => {
+      try {
+        const result = await notificationRemove({ notificationId });
+
+        if (isErrorResponse(result)) {
+          await notifyError();
+          toast.error(result.message ?? result.error ?? 'Unable to delete notification.');
+          return;
+        }
+
+        await notifySuccess();
+        toast.success('Notification deleted.');
+        await mutate();
+      } catch (error) {
+        await notifyError();
+        const message =
+          error instanceof HttpError
+            ? error.message
+            : 'Unable to delete notification.';
+        toast.error(message);
+      }
+    },
+    [mutate, notifyError, notifySuccess]
+  );
 
   const openCreateSheet = useCallback(async () => {
     await impact();
@@ -127,7 +154,7 @@ export default function NotificationsScreen() {
         }
         animate={NOTIFICATIONS_ENTER_ANIMATION}
         transition={getNotificationsTransition(Math.min(index, 6) * 28, isReducedMotionEnabled)}>
-        <NotificationsCard notification={item} />
+        <NotificationsCard notification={item} onDelete={handleDelete} />
       </EaseView>
     ),
     [isReducedMotionEnabled]

@@ -1,9 +1,10 @@
-import { View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import type { NotificationAllResponseBody, NotificationType } from '@/types/notifications';
 import { formatCompactRelativeTime } from '@/lib/utils';
+import { useHaptics } from '@/hooks/use-haptics';
 import {
   BellIcon,
   ChevronRightIcon,
@@ -15,6 +16,7 @@ import {
 
 type Props = {
   notification: NotificationAllResponseBody;
+  onDelete?: (notificationId: string) => void;
 };
 
 const PROVIDER_LABELS: Record<NotificationType, string> = {
@@ -47,13 +49,42 @@ const PROVIDER_ICONS: Record<NotificationType, typeof BellIcon> = {
   teams: MessageSquareIcon,
 };
 
-export function NotificationsCard({ notification }: Props) {
+export function NotificationsCard({ notification, onDelete }: Props) {
+  const { impact, notifyWarning } = useHaptics();
   const providerLabel = PROVIDER_LABELS[notification.notificationType];
   const providerIcon = PROVIDER_ICONS[notification.notificationType];
   const createdAtLabel = formatCompactRelativeTime(notification.createdAt);
 
+  const handlePress = () => {
+    void impact();
+    Alert.alert(notification.name, `Provider: ${providerLabel}`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void notifyWarning();
+          Alert.alert(
+            'Delete Notification',
+            `Remove "${notification.name}"? This action cannot be undone.`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => onDelete?.(notification.notificationId),
+              },
+            ]
+          );
+        },
+      },
+    ]);
+  };
+
   return (
-    <View className="bg-card border-border/80 flex-row items-center justify-between rounded-2xl border px-4 py-4">
+    <Pressable
+      onPress={handlePress}
+      className="bg-card border-border/80 flex-row items-center justify-between rounded-2xl border px-4 py-4 active:opacity-90">
       <View className="flex-1 flex-row items-center gap-3 pr-3">
         <View className="bg-secondary border-border/70 h-11 w-11 items-center justify-center rounded-2xl border">
           <Icon as={providerIcon} className="text-muted-foreground size-5" />
@@ -71,6 +102,6 @@ export function NotificationsCard({ notification }: Props) {
       </View>
 
       <Icon as={ChevronRightIcon} className="text-muted-foreground/60 size-4" />
-    </View>
+    </Pressable>
   );
 }

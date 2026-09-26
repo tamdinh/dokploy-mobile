@@ -1,0 +1,164 @@
+name: Android Production Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (without v prefix, e.g. 1.0.0)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Production AAB
+
+    runs-on:
+      - self-hosted
+      - expo-android-runner
+
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.1.12297006
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read release version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release version: $VERSION"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release version: $VERSION"
+
+      - name: Verify Android toolchain
+        shell: bash
+        run: |
+          set -e
+
+          java -version
+          node --version
+          pnpm --version
+          eas --version
+
+          test -d "$ANDROID_HOME"
+          test -d "$ANDROID_NDK_HOME"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('pnpm-lock.yaml', 'android/**/*.gradle*', 'android/**/gradle-wrapper.properties', 'gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          cat > local.properties <<EOF
+          sdk.dir=${ANDROID_HOME}
+          ndk.dir=${ANDROID_NDK_HOME}
+          EOF
+
+          if [ -d android ]; then
+            cp local.properties android/local.properties
+          fi
+
+      - name: Build production AAB
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GRADLE_OPTS: >-
+            -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m"
+            -Dorg.gradle.parallel=false
+            -Dorg.gradle.workers.max=2
+        run: |
+          eas build \
+            --local \
+            --platform android \
+            --profile production \
+            --non-interactive \
+            --output "dokploy-${{ steps.version.outputs.version }}.aab"
+
+      - name: Verify AAB
+        shell: bash
+        run: |
+          AAB="dokploy-${{ steps.version.outputs.version }}.aab"
+
+          if [ ! -f "$AAB" ]; then
+            echo "::error::AAB was not created"
+            pwd
+            find . -maxdepth 4 -type f \( -name "*.aab" -o -name "*.apk" \) -print
+            exit 1
+          fi
+
+          echo "Production AAB:"
+          ls -lh "$AAB"
+
+      - name: Upload production AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dokploy-production-${{ steps.version.outputs.version }}-aab
+          path: dokploy-${{ steps.version.outputs.version }}.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${GITHUB_REF_NAME}"
+          AAB="dokploy-${VERSION}.aab"
+
+          gh release create "$TAG" \
+            "$AAB" \
+            --title "Dokploy Mobile v${VERSION}" \
+            --generate-notes

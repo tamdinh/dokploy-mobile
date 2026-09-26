@@ -1,0 +1,33 @@
+# Files EAS Build should ignore (works like .gitignore).
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Local-dev junk
+.expo/
+dist/
+web-build/
+node_modules/
+*.log
+.DS_Store
+
+# Native projects: this app uses Continuous Native Generation (config
+# plugins in app.json and app.config.js). ios/ and android/ are regenerated
+# during the build itself, so they should never be uploaded even if a
+# local prebuild left them on disk (ios/Pods alone can be 1GB+).
+ios/
+android/
+
+# Editor / IDE
+.vscode/
+.idea/
+.git/
+.superpowers/
+
+# Generated marketing screenshots and artifacts
+marketing/
+*.apk
+*.aab
+*.ipa

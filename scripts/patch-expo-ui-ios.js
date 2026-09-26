@@ -44,10 +44,6 @@ if (!source.includes(importAnchor)) {
   process.exit(0);
 }
 
-fs.writeFileSync(
-  pickerViewPath,
-  source.replace(importAnchor, `${importAnchor}${patch}`),
-  'utf8'
-);
+fs.writeFileSync(pickerViewPath, source.replace(importAnchor, `${importAnchor}${patch}`), 'utf8');
 
 console.log('[patch-expo-ui-ios] Patched @expo/ui PickerView.swift.');

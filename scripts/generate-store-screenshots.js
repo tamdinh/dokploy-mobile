@@ -125,7 +125,9 @@ function findChrome() {
     } catch {}
   }
 
-  throw new Error('Google Chrome or Chromium was not found. Set CHROME_PATH to a headless Chrome binary.');
+  throw new Error(
+    'Google Chrome or Chromium was not found. Set CHROME_PATH to a headless Chrome binary.'
+  );
 }
 
 function fileUrl(filePath) {

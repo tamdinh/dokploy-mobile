@@ -337,9 +337,7 @@ function readStoredOrganization(value: unknown): StoredOrganization | null {
 
   const role = typeof value.role === 'string' ? value.role : null;
   const hasOwnerAccess =
-    typeof value.hasOwnerAccess === 'boolean'
-      ? value.hasOwnerAccess
-      : role === 'owner';
+    typeof value.hasOwnerAccess === 'boolean' ? value.hasOwnerAccess : role === 'owner';
 
   return {
     id,

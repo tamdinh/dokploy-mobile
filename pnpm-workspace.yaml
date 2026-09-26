@@ -1,0 +1,10 @@
+nodeLinker: hoisted
+
+packages:
+  - '.'
+
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true
+  core-js: true
+  esbuild: true

@@ -14,12 +14,9 @@ export function useHaptics() {
     await runSafely(() => Haptics.impactAsync(style));
   }, []);
 
-  const notification = useCallback(
-    async (type = Haptics.NotificationFeedbackType.Success) => {
-      await runSafely(() => Haptics.notificationAsync(type));
-    },
-    []
-  );
+  const notification = useCallback(async (type = Haptics.NotificationFeedbackType.Success) => {
+    await runSafely(() => Haptics.notificationAsync(type));
+  }, []);
 
   const selection = useCallback(async () => {
     await runSafely(() => Haptics.selectionAsync());

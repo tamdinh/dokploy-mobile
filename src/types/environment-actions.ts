@@ -8,7 +8,6 @@ export type ApplicationSaveEnvironmentRequest = {
   createEnvFile?: boolean | null;
 };
 
-
 export type ApplicationSaveEnvironmentResponse = models.ErrorT | boolean;
 
 export type RedisSaveEnvironmentRequest = {

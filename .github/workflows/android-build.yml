@@ -1,0 +1,216 @@
+name: Android Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Build profile
+        required: true
+        type: choice
+        default: preview
+        options:
+          - preview
+          - development
+          - both
+      mode:
+        description: 'Build mode (cloud uses Expo EAS Cloud; local uses self-hosted runner)'
+        required: true
+        type: choice
+        default: cloud
+        options:
+          - cloud
+          - local
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve profiles
+    runs-on: ubuntu-latest
+
+    outputs:
+      profiles: ${{ steps.profiles.outputs.profiles }}
+
+    steps:
+      - id: profiles
+        shell: bash
+        run: |
+          case "${{ inputs.profile }}" in
+            development)
+              echo 'profiles=["development"]' >> "$GITHUB_OUTPUT"
+              ;;
+            preview)
+              echo 'profiles=["preview"]' >> "$GITHUB_OUTPUT"
+              ;;
+            both)
+              echo 'profiles=["development","preview"]' >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unknown profile"
+              exit 1
+              ;;
+          esac
+
+  build-cloud:
+    name: EAS Cloud Build ${{ matrix.profile }}
+    if: inputs.mode == 'cloud'
+    needs: resolve
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.resolve.outputs.profiles) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build Android via EAS Cloud
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform android \
+            --profile "${{ matrix.profile }}" \
+            --non-interactive
+
+  build-local:
+    name: Local Build ${{ matrix.profile }} APK
+    if: inputs.mode == 'local'
+    needs: resolve
+    runs-on:
+      - self-hosted
+      - expo-android-runner
+
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.resolve.outputs.profiles) }}
+
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.1.12297006
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Android toolchain
+        shell: bash
+        run: |
+          set -e
+          echo "Java:"
+          java -version
+          echo "Node:"
+          node --version
+          echo "pnpm:"
+          pnpm --version
+          echo "EAS:"
+          eas --version
+          test -d "$ANDROID_HOME"
+          ls -ld "$ANDROID_HOME"
+          test -d "$ANDROID_NDK_HOME"
+          ls -ld "$ANDROID_NDK_HOME"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('pnpm-lock.yaml', 'android/**/*.gradle*', 'android/**/gradle-wrapper.properties', 'gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          cat > local.properties <<EOF
+          sdk.dir=${ANDROID_HOME}
+          ndk.dir=${ANDROID_NDK_HOME}
+          EOF
+          if [ -d android ]; then
+            cp local.properties android/local.properties
+          fi
+
+      - name: Build ${{ matrix.profile }} APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GRADLE_OPTS: >-
+            -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m"
+            -Dorg.gradle.parallel=false
+            -Dorg.gradle.workers.max=2
+        run: |
+          eas build \
+            --local \
+            --platform android \
+            --profile "${{ matrix.profile }}" \
+            --non-interactive \
+            --output "dokploy-${{ matrix.profile }}.apk"
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          APK="dokploy-${{ matrix.profile }}.apk"
+          test -f "$APK"
+          echo "APK created:"
+          ls -lh "$APK"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dokploy-${{ matrix.profile }}-apk
+          path: dokploy-${{ matrix.profile }}.apk
+          if-no-files-found: error
+          retention-days: 14

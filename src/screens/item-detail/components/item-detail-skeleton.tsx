@@ -13,7 +13,7 @@ export function ItemDetailSkeleton({ title = 'Loading...' }: Props) {
     <SafeAreaView className="bg-background flex-1 px-4" edges={['left', 'right']}>
       <Stack.Screen options={{ title }} />
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
-        <View className="pt-2 gap-3">
+        <View className="gap-3 pt-2">
           <Skeleton className="h-7 w-40 rounded" />
           <Skeleton className="h-4 w-52 rounded" />
         </View>

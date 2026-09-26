@@ -50,6 +50,11 @@
           "ios": {
             "useFrameworks": "static",
             "buildReactNativeFromSource": true
+          },
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
           }
         }
       ],
@@ -64,12 +69,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
       "router": {},
-      "eas": {
-        "projectId": "b8003c5e-dda1-45ad-bd32-cd86157f1cfc"
-      }
-    },
-    "owner": "abdullah_0087"
+      "eas": {}
+    }
   }
 }

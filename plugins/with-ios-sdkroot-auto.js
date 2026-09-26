@@ -8,11 +8,7 @@ function withIosSdkrootAuto(config) {
     for (const key of Object.keys(configurations)) {
       const configuration = configurations[key];
 
-      if (
-        !configuration ||
-        typeof configuration !== 'object' ||
-        !configuration.buildSettings
-      ) {
+      if (!configuration || typeof configuration !== 'object' || !configuration.buildSettings) {
         continue;
       }
 

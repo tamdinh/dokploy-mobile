@@ -72,9 +72,8 @@ export default function NotificationsScreen() {
       } catch (error) {
         await notifyError();
         const message =
-          error instanceof HttpError
-            ? error.message
-            : 'Unable to delete notification.';
+          (error instanceof HttpError ? error.message : undefined) ||
+          'Unable to delete notification.';
         toast.error(message);
       }
     },

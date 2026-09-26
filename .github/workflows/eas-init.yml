@@ -1,0 +1,76 @@
+name: EAS Init Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      account:
+        description: 'Expo account or organization slug (optional, leave empty to use default account of EXPO_TOKEN)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  init:
+    name: Initialize EAS Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Run EAS Init
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -e
+          echo "Checking Expo authentication..."
+          eas whoami
+
+          if [ -n "${{ inputs.account }}" ]; then
+            echo "Initializing EAS project under account: ${{ inputs.account }}"
+            eas init --account "${{ inputs.account }}" --force --non-interactive
+          else
+            echo "Initializing EAS project..."
+            eas init --force --non-interactive
+          fi
+
+      - name: Show updated app.json
+        run: cat app.json
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app.json
+          git commit -m "chore(eas): configure expo project id from eas init" || echo "No changes to commit"
+          git push

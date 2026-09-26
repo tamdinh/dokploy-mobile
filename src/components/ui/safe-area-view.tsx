@@ -1,4 +1,7 @@
-import { SafeAreaView as RNSafeAreaView, type SafeAreaViewProps } from 'react-native-safe-area-context';
+import {
+  SafeAreaView as RNSafeAreaView,
+  type SafeAreaViewProps,
+} from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
 
 const StyledSafeAreaView = withUniwind(RNSafeAreaView);

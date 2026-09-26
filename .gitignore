@@ -53,6 +53,8 @@ expo-env.d.ts
 
 
 *.md
+!README.md
+!docs/**/*.md
 *.html
 *.env
 .omx/

@@ -4,12 +4,18 @@ import { THEME } from '@/lib/theme';
 import { Platform, StyleSheet, TextInput, type TextInputProps } from 'react-native';
 import { useUniwind } from 'uniwind';
 
-const Input = forwardRef<TextInput, TextInputProps>(function Input({ className, style, ...props }, ref) {
+const Input = forwardRef<TextInput, TextInputProps>(function Input(
+  { className, style, ...props },
+  ref
+) {
   const { theme } = useUniwind();
   const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
   const androidStyle =
     Platform.OS === 'android'
-      ? [styles.androidInput, className?.includes('bg-transparent') && styles.androidTransparentInput]
+      ? [
+          styles.androidInput,
+          className?.includes('bg-transparent') && styles.androidTransparentInput,
+        ]
       : undefined;
 
   return (

@@ -74,7 +74,10 @@
     },
     "extra": {
       "router": {},
-      "eas": {}
-    }
+      "eas": {
+        "projectId": "8178441a-240d-4417-b137-1c4d11b095cb"
+      }
+    },
+    "owner": "kimmin"
   }
 }

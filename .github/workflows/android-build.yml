@@ -9,17 +9,9 @@ on:
         type: choice
         default: preview
         options:
-          - preview
           - development
+          - preview
           - both
-      mode:
-        description: 'Build mode (cloud uses Expo EAS Cloud; local uses self-hosted runner)'
-        required: true
-        type: choice
-        default: cloud
-        options:
-          - cloud
-          - local
 
 permissions:
   contents: read
@@ -52,62 +44,10 @@ jobs:
               ;;
           esac
 
-  build-cloud:
-    name: EAS Cloud Build ${{ matrix.profile }}
-    if: inputs.mode == 'cloud'
+  build:
+    name: Build ${{ matrix.profile }} APK
     needs: resolve
-    runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: ${{ fromJSON(needs.resolve.outputs.profiles) }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Enable pnpm
-        run: corepack enable
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        shell: bash
-        run: |
-          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Setup EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Build Android via EAS Cloud
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          eas build \
-            --platform android \
-            --profile "${{ matrix.profile }}" \
-            --non-interactive
-
-  build-local:
-    name: Local Build ${{ matrix.profile }} APK
-    if: inputs.mode == 'local'
-    needs: resolve
     runs-on:
       - self-hosted
       - expo-android-runner
@@ -130,16 +70,24 @@ jobs:
         shell: bash
         run: |
           set -e
+
           echo "Java:"
           java -version
+
           echo "Node:"
           node --version
+
           echo "pnpm:"
           pnpm --version
+
           echo "EAS:"
           eas --version
+
+          echo "Android SDK:"
           test -d "$ANDROID_HOME"
           ls -ld "$ANDROID_HOME"
+
+          echo "NDK:"
           test -d "$ANDROID_NDK_HOME"
           ls -ld "$ANDROID_NDK_HOME"
 
@@ -180,6 +128,7 @@ jobs:
           sdk.dir=${ANDROID_HOME}
           ndk.dir=${ANDROID_NDK_HOME}
           EOF
+
           if [ -d android ]; then
             cp local.properties android/local.properties
           fi
@@ -203,7 +152,9 @@ jobs:
         shell: bash
         run: |
           APK="dokploy-${{ matrix.profile }}.apk"
+
           test -f "$APK"
+
           echo "APK created:"
           ls -lh "$APK"
 

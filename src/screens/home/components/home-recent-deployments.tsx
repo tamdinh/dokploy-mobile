@@ -60,10 +60,20 @@ export function HomeRecentDeployments({
         const duration = formatDuration(deployment.startedAt, deployment.finishedAt);
         const timeLabel = duration ?? formatCompactRelativeTime(deployment.createdAt);
         const statusLabel = formatStatusLabel(deployment.status);
+        const title = deployment.serviceName || deployment.title || 'Deployment';
+        const projectEnv = [deployment.projectName, deployment.environmentName]
+          .filter(Boolean)
+          .join(' / ');
+        const detailText =
+          deployment.description?.trim() ||
+          (deployment.title?.trim() && deployment.title.trim() !== deployment.serviceName
+            ? deployment.title.trim()
+            : null);
         const subtitle =
           deployment.errorMessage?.trim() ||
-          deployment.description?.trim() ||
-          `${deployment.projectName} / ${deployment.environmentName}`;
+          [detailText, projectEnv].filter(Boolean).join(' · ') ||
+          projectEnv ||
+          'Deployment';
 
         return (
           <Pressable
@@ -77,10 +87,10 @@ export function HomeRecentDeployments({
               <HomeStatusDot level={deployment.level} />
               <View className="min-w-0 flex-1">
                 <Text className="font-semibold" numberOfLines={1}>
-                  -----
+                  {title}
                 </Text>
                 <Text variant="muted" className="mt-0.5" numberOfLines={1}>
-                  ----{' '}
+                  {subtitle}
                 </Text>
                 <View className="mt-2 flex-row items-center gap-2">
                   <View className="bg-muted rounded-md px-2 py-0.5">

@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 
 import { getRequest, postRequest } from '@/lib/http';
 import { useActiveOrganizationSWRKey } from '@/lib/organization-swr-key';
@@ -11,13 +11,17 @@ import type {
   ServiceDeployResponse,
   ServiceRebuildResponse,
   ServiceReloadResponse,
+  ServiceStartResponse,
   ServiceStopResponse,
 } from '@/types/application-actions';
 
-export function useRedisOne(redisId: string | undefined) {
+export function useRedisOne(
+  redisId: string | undefined,
+  config?: SWRConfiguration<RedisOneResponse>
+) {
   const key = useActiveOrganizationSWRKey(redisId ? ['redis.one', redisId] : null);
 
-  return useSWR<RedisOneResponse>(key, () => getRequest('redis.one', { redisId }));
+  return useSWR<RedisOneResponse>(key, () => getRequest('redis.one', { redisId }), config);
 }
 
 export function redisSaveEnvironment(payload: RedisSaveEnvironmentRequest) {
@@ -34,6 +38,10 @@ export function redisReload(payload: { redisId: string; appName: string }) {
 
 export function redisRebuild(payload: { redisId: string }) {
   return postRequest<ServiceRebuildResponse>('redis.rebuild', payload);
+}
+
+export function redisStart(payload: { redisId: string }) {
+  return postRequest<ServiceStartResponse>('redis.start', payload);
 }
 
 export function redisStop(payload: { redisId: string }) {

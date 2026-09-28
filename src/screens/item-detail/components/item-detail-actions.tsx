@@ -1,5 +1,5 @@
 import { ActivityIndicator, View } from 'react-native';
-import { Ban, HammerIcon, RefreshCwIcon, RocketIcon } from 'lucide-react-native';
+import { Ban, HammerIcon, PlayIcon, RefreshCwIcon, RocketIcon } from 'lucide-react-native';
 import { useUniwind } from 'uniwind';
 
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,16 @@ type Props = {
   itemType: ProjectItemType;
   itemId?: string;
   appName?: string;
+  status?: string | null;
   isDeploymentRunning?: boolean;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 };
 
 export function ItemDetailActions({
   itemType,
   itemId,
   appName,
+  status,
   isDeploymentRunning,
   onRefresh,
 }: Props) {
@@ -33,16 +35,20 @@ export function ItemDetailActions({
     canDeploy,
     canReload,
     canRebuild,
+    canStart,
     canStop,
+    isIdle,
     secondaryActionLabel,
     onDeploy,
     onReload,
     onRebuild,
+    onStart,
     onStop,
   } = useItemDetailActions({
     itemType,
     itemId,
     appName,
+    status,
     isDeploymentRunning,
     onRefresh,
   });
@@ -110,25 +116,47 @@ export function ItemDetailActions({
             Rebuild
           </Text>
         </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          className="flex-1 gap-1.5 px-2.5"
-          disabled={!canStop || isBusy}
-          onPress={onStop}>
-          {activeAction === 'stop' ? (
-            <View className="w-4 items-center">
-              <ActivityIndicator size="small" color="white" />
-            </View>
-          ) : (
-            <View className="w-4 items-center">
-              <Icon as={Ban} className="size-3.5 text-white" />
-            </View>
-          )}
-          <Text className="text-xs" numberOfLines={1}>
-            Stop
-          </Text>
-        </Button>
+        {isIdle ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1 gap-1.5 px-2.5"
+            disabled={!canStart || isBusy}
+            onPress={onStart}>
+            {activeAction === 'start' ? (
+              <View className="w-4 items-center">
+                <ActivityIndicator size="small" color={secondarySpinner} />
+              </View>
+            ) : (
+              <View className="w-4 items-center">
+                <Icon as={PlayIcon} className="text-secondary-foreground size-3.5" />
+              </View>
+            )}
+            <Text className="text-xs" numberOfLines={1}>
+              Start
+            </Text>
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="flex-1 gap-1.5 px-2.5"
+            disabled={!canStop || isBusy}
+            onPress={onStop}>
+            {activeAction === 'stop' ? (
+              <View className="w-4 items-center">
+                <ActivityIndicator size="small" color="white" />
+              </View>
+            ) : (
+              <View className="w-4 items-center">
+                <Icon as={Ban} className="size-3.5 text-white" />
+              </View>
+            )}
+            <Text className="text-xs" numberOfLines={1}>
+              Stop
+            </Text>
+          </Button>
+        )}
       </View>
     </View>
   );

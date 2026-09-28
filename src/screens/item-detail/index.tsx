@@ -239,6 +239,7 @@ export default function ItemDetailScreen() {
             itemType={normalizedType}
             itemId={itemId}
             appName={actionAppName}
+            status={summary?.status ?? itemStatus ?? null}
             isDeploymentRunning={isDeploymentRunning}
             onRefresh={retry}
           />

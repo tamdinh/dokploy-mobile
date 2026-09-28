@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 
 import { getRequest, postRequest } from '@/lib/http';
 import { useActiveOrganizationSWRKey } from '@/lib/organization-swr-key';
@@ -11,13 +11,17 @@ import type {
   ServiceDeployResponse,
   ServiceRebuildResponse,
   ServiceReloadResponse,
+  ServiceStartResponse,
   ServiceStopResponse,
 } from '@/types/application-actions';
 
-export function useMariadbOne(mariadbId: string | undefined) {
+export function useMariadbOne(
+  mariadbId: string | undefined,
+  config?: SWRConfiguration<MariadbOneResponse>
+) {
   const key = useActiveOrganizationSWRKey(mariadbId ? ['mariadb.one', mariadbId] : null);
 
-  return useSWR<MariadbOneResponse>(key, () => getRequest('mariadb.one', { mariadbId }));
+  return useSWR<MariadbOneResponse>(key, () => getRequest('mariadb.one', { mariadbId }), config);
 }
 
 export function mariadbSaveEnvironment(payload: MariadbSaveEnvironmentRequest) {
@@ -34,6 +38,10 @@ export function mariadbReload(payload: { mariadbId: string; appName: string }) {
 
 export function mariadbRebuild(payload: { mariadbId: string }) {
   return postRequest<ServiceRebuildResponse>('mariadb.rebuild', payload);
+}
+
+export function mariadbStart(payload: { mariadbId: string }) {
+  return postRequest<ServiceStartResponse>('mariadb.start', payload);
 }
 
 export function mariadbStop(payload: { mariadbId: string }) {

@@ -154,13 +154,15 @@ export function useItemDetailScreen(
   itemId: string | undefined,
   initialStatus?: string
 ): ItemDetailState {
-  const application = useApplicationOne(itemType === 'application' ? itemId : undefined);
-  const redis = useRedisOne(itemType === 'redis' ? itemId : undefined);
-  const postgres = usePostgresOne(itemType === 'postgres' ? itemId : undefined);
-  const mysql = useMysqlOne(itemType === 'mysql' ? itemId : undefined);
-  const mongo = useMongoOne(itemType === 'mongo' ? itemId : undefined);
-  const mariadb = useMariadbOne(itemType === 'mariadb' ? itemId : undefined);
-  const compose = useComposeOne(itemType === 'compose' ? itemId : undefined);
+  const swrConfig = useMemo(() => ({ refreshInterval: 5000 }), []);
+
+  const application = useApplicationOne(itemType === 'application' ? itemId : undefined, swrConfig);
+  const redis = useRedisOne(itemType === 'redis' ? itemId : undefined, swrConfig);
+  const postgres = usePostgresOne(itemType === 'postgres' ? itemId : undefined, swrConfig);
+  const mysql = useMysqlOne(itemType === 'mysql' ? itemId : undefined, swrConfig);
+  const mongo = useMongoOne(itemType === 'mongo' ? itemId : undefined, swrConfig);
+  const mariadb = useMariadbOne(itemType === 'mariadb' ? itemId : undefined, swrConfig);
+  const compose = useComposeOne(itemType === 'compose' ? itemId : undefined, swrConfig);
 
   const active = (() => {
     switch (itemType) {
@@ -218,7 +220,7 @@ export function useItemDetailScreen(
     };
   }, [detailData, itemId, itemType]);
 
-  const deploymentsRequest = useDeploymentsByType(deploymentLookup);
+  const deploymentsRequest = useDeploymentsByType(deploymentLookup, swrConfig);
 
   const summary = useMemo<DetailSummary | null>(() => {
     if (!detailData) return null;

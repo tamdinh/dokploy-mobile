@@ -20,6 +20,7 @@ const STATUS_CLASS: Record<string, string> = {
   failed: 'bg-rose-500',
   running: 'bg-amber-500',
   pending: 'bg-amber-500',
+  idle: 'bg-slate-400',
 };
 
 export const ApplicationsCard = memo(function ApplicationsCard({ application, projectId }: Props) {

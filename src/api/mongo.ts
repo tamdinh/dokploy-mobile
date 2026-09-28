@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 
 import { getRequest, postRequest } from '@/lib/http';
 import { useActiveOrganizationSWRKey } from '@/lib/organization-swr-key';
@@ -11,13 +11,17 @@ import type {
   ServiceDeployResponse,
   ServiceRebuildResponse,
   ServiceReloadResponse,
+  ServiceStartResponse,
   ServiceStopResponse,
 } from '@/types/application-actions';
 
-export function useMongoOne(mongoId: string | undefined) {
+export function useMongoOne(
+  mongoId: string | undefined,
+  config?: SWRConfiguration<MongoOneResponse>
+) {
   const key = useActiveOrganizationSWRKey(mongoId ? ['mongo.one', mongoId] : null);
 
-  return useSWR<MongoOneResponse>(key, () => getRequest('mongo.one', { mongoId }));
+  return useSWR<MongoOneResponse>(key, () => getRequest('mongo.one', { mongoId }), config);
 }
 
 export function mongoSaveEnvironment(payload: MongoSaveEnvironmentRequest) {
@@ -34,6 +38,10 @@ export function mongoReload(payload: { mongoId: string; appName: string }) {
 
 export function mongoRebuild(payload: { mongoId: string }) {
   return postRequest<ServiceRebuildResponse>('mongo.rebuild', payload);
+}
+
+export function mongoStart(payload: { mongoId: string }) {
+  return postRequest<ServiceStartResponse>('mongo.start', payload);
 }
 
 export function mongoStop(payload: { mongoId: string }) {

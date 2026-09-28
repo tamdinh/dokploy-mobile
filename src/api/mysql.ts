@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 
 import { getRequest, postRequest } from '@/lib/http';
 import { useActiveOrganizationSWRKey } from '@/lib/organization-swr-key';
@@ -11,13 +11,17 @@ import type {
   ServiceDeployResponse,
   ServiceRebuildResponse,
   ServiceReloadResponse,
+  ServiceStartResponse,
   ServiceStopResponse,
 } from '@/types/application-actions';
 
-export function useMysqlOne(mysqlId: string | undefined) {
+export function useMysqlOne(
+  mysqlId: string | undefined,
+  config?: SWRConfiguration<MysqlOneResponse>
+) {
   const key = useActiveOrganizationSWRKey(mysqlId ? ['mysql.one', mysqlId] : null);
 
-  return useSWR<MysqlOneResponse>(key, () => getRequest('mysql.one', { mysqlId }));
+  return useSWR<MysqlOneResponse>(key, () => getRequest('mysql.one', { mysqlId }), config);
 }
 
 export function mysqlSaveEnvironment(payload: MysqlSaveEnvironmentRequest) {
@@ -34,6 +38,10 @@ export function mysqlReload(payload: { mysqlId: string; appName: string }) {
 
 export function mysqlRebuild(payload: { mysqlId: string }) {
   return postRequest<ServiceRebuildResponse>('mysql.rebuild', payload);
+}
+
+export function mysqlStart(payload: { mysqlId: string }) {
+  return postRequest<ServiceStartResponse>('mysql.start', payload);
 }
 
 export function mysqlStop(payload: { mysqlId: string }) {

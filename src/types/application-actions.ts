@@ -24,10 +24,21 @@ export type ApplicationStopResponseBody = Record<string, unknown>;
 
 export type ApplicationStopResponse = models.ErrorT | ApplicationStopResponseBody;
 
+export type ApplicationStartRequest = {
+  applicationId: string;
+};
+
+// Full SDK response is a large application payload; treat it as opaque here.
+export type ApplicationStartResponseBody = Record<string, unknown>;
+
+export type ApplicationStartResponse = models.ErrorT | ApplicationStartResponseBody;
+
 export type ServiceDeployResponse = models.ErrorT | undefined | Record<string, unknown>;
 
 export type ServiceReloadResponse = models.ErrorT | boolean;
 
 export type ServiceRebuildResponse = models.ErrorT | boolean;
+
+export type ServiceStartResponse = models.ErrorT | undefined | Record<string, unknown>;
 
 export type ServiceStopResponse = models.ErrorT | undefined | Record<string, unknown>;

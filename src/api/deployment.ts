@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 
 import { getRequest } from '@/lib/http';
 import { useActiveOrganizationSWRKey } from '@/lib/organization-swr-key';
@@ -8,10 +8,13 @@ export async function readDeploymentsByType(request: DeploymentAllByTypeRequest)
   return getRequest<DeploymentAllByTypeResponse>('deployment.allByType', request);
 }
 
-export function useDeploymentsByType(request: DeploymentAllByTypeRequest | null) {
+export function useDeploymentsByType(
+  request: DeploymentAllByTypeRequest | null,
+  config?: SWRConfiguration<DeploymentAllByTypeResponse>
+) {
   const key = useActiveOrganizationSWRKey(
     request ? ['deployment.allByType', request.id, request.type] : null
   );
 
-  return useSWR<DeploymentAllByTypeResponse>(key, () => readDeploymentsByType(request!));
+  return useSWR<DeploymentAllByTypeResponse>(key, () => readDeploymentsByType(request!), config);
 }
